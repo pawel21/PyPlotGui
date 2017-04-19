@@ -26,13 +26,7 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
         super().__init__(parent)
         wid = QWidget(self)
         self.setCentralWidget(wid)
-        self.figure = plt.figure()
-        self.axes = self.figure.add_subplot(111)
-        # We want the axes cleared every time plot() is called
-        self.axes.hold(False)
-        self.canvas = FigureCanvas(self.figure)
-
-        self.toolbar = NavigationToolbar(self.canvas, self)
+        self.fig, self.axes = plt.subplots()
 
         self.button_to_plot = QtWidgets.QPushButton('Plot')
         self.button_to_plot.clicked.connect(self.plot)
@@ -68,10 +62,8 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
 
         self.button_to_import_data_xyz = QtWidgets.QPushButton('import data x,y,z')
 
-        # set the layout
+        #set the layout
         layout = QtWidgets.QVBoxLayout()
-        layout.addWidget(self.toolbar)
-        layout.addWidget(self.canvas)
 
         btnlayout1 = QtWidgets.QHBoxLayout()
         btnlayout1.addWidget(self.button_to_plot)
@@ -115,10 +107,10 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
         wid.setLayout(layout)
 
     def home(self):
-        self.toolbar.home()
+        pass
 
     def zoom(self):
-        self.toolbar.zoom()
+        pass
 
     def import_data(self):
         fname = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', os.getcwd())
@@ -144,28 +136,28 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
 
     def plot(self):
         self.axes.plot(self.x, self.y, 'bo')
-        self.canvas.draw()
+        plt.show()
 
     def plot_twinx(self):
         self.axes.plot(self.x, self.y, 'bo')
         self.axes2 = self.axes.twinx()
         self.axes2.plot(self.x, self.z, 'r<')
-        self.canvas.draw()
+        plt.show()
 
     def set_title(self):
         self.title = self.text_title.text()
         self.axes.set_title(self.title)
-        self.canvas.draw()
+        self.fig.canvas.draw()
 
     def set_xlabel(self):
         self.xlabel = self.text_xlable.text()
         self.axes.set_xlabel(self.xlabel)
-        self.canvas.draw()
+        self.fig.canvas.draw()
 
     def set_ylabel(self):
         self.ylabel = self.text_ylable.text()
         self.axes.set_ylabel(self.ylabel)
-        self.canvas.draw()
+        self.fig.canvas.draw()
 
     def save_fig(self):
         path_to_save_fig = os.path.join(os.getcwd(), "wykres.jpg")
