@@ -10,7 +10,12 @@ matplotlib.use('qt5Agg')
 import numpy as np
 import os
 
-plt.rcParams.update({'font.size': 18})
+plt.rcParams['font.family'] = 'serif'
+plt.rcParams['font.serif'] = 'Palatino'
+plt.rcParams['text.usetex'] = True
+plt.rcParams['text.latex.unicode'] = True
+plt.rcParams.update({'font.size': 28})
+plt.rcParams['text.latex.preamble'] = r'\usepackage[T1]{polski}'
 
 class Data_to_plot:
     x = 0
@@ -34,8 +39,8 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
         self.button_to_plot_twinx = QtWidgets.QPushButton('Plot twinx')
         self.button_to_plot_twinx.clicked.connect(self.plot_twinx)
 
-        self.button_to_zoom = QtWidgets.QPushButton('Zoom')
-        self.button_to_zoom.clicked.connect(self.zoom)
+        self.button_to_reset = QtWidgets.QPushButton('Reset')
+        self.button_to_reset.clicked.connect(self.reset)
 
         self.button_to_home = QtWidgets.QPushButton('Home')
         self.button_to_home.clicked.connect(self.home)
@@ -68,7 +73,7 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
         btnlayout1 = QtWidgets.QHBoxLayout()
         btnlayout1.addWidget(self.button_to_plot)
         btnlayout1.addWidget(self.button_to_plot_twinx)
-        btnlayout1.addWidget(self.button_to_zoom)
+        btnlayout1.addWidget(self.button_to_reset)
         btnlayout1.addWidget(self.button_to_home)
         btnlayout1.addWidget(self.button_to_save_fig)
 
@@ -105,12 +110,13 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
         layout.addWidget(qw4)
 
         wid.setLayout(layout)
+        self.setGeometry(800, 900, 600, 700)
 
     def home(self):
         pass
 
-    def zoom(self):
-        pass
+    def reset(self):
+        plt.close("all")
 
     def import_data(self):
         fname = QtWidgets.QFileDialog.getOpenFileName(self, 'Open file', os.getcwd())
