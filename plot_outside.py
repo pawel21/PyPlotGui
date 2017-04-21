@@ -1,15 +1,15 @@
-import sys
 from PyQt5 import QtWidgets
-from PyQt5.QtWidgets import QWidget
+from PyQt5.QtWidgets import QWidget, QComboBox
 
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt5 import NavigationToolbar2QT as NavigationToolbar
 import matplotlib.pyplot as plt
 import matplotlib
-matplotlib.use('qt5Agg')
 import numpy as np
 import os
+import sys
 
+from fit import Fit
+
+matplotlib.use('qt5Agg')
 plt.rcParams['font.family'] = 'serif'
 plt.rcParams['font.serif'] = 'Palatino'
 plt.rcParams['text.usetex'] = True
@@ -17,10 +17,11 @@ plt.rcParams['text.latex.unicode'] = True
 plt.rcParams.update({'font.size': 28})
 plt.rcParams['text.latex.preamble'] = r'\usepackage[T1]{polski}'
 
+
 class Data_to_plot:
     x = 0
     y = 0
-    x = 0
+    z = 0
     xlabel = "x"
     ylabel = "y"
     title = ""
@@ -31,7 +32,6 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
         super().__init__(parent)
         wid = QWidget(self)
         self.setCentralWidget(wid)
-        self.fig, self.axes = plt.subplots()
 
         self.button_to_plot = QtWidgets.QPushButton('Plot')
         self.button_to_plot.clicked.connect(self.plot)
@@ -47,7 +47,6 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
 
         self.button_to_save_fig = QtWidgets.QPushButton('Save')
         self.button_to_save_fig.clicked.connect(self.save_fig)
-
 
         self.button_to_set_xlabel = QtWidgets.QPushButton('Set xlabel')
         self.button_to_set_xlabel.clicked.connect(self.set_xlabel)
@@ -66,7 +65,16 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
         self.textEdit = QtWidgets.QTextEdit()
 
         self.button_to_import_data_xyz = QtWidgets.QPushButton('import data x,y,z')
+        self.button_to_import_data_xyz.clicked.connect(self.import_data_xyz)
 
+        self.label_fit = QtWidgets.QLabel('Fit')
+
+        self.combo_to_chose_poly = QComboBox(self)
+        self.combo_to_chose_poly.addItem("poly1")
+        self.combo_to_chose_poly.addItem("poly2")
+        self.fit_info = QtWidgets.QLineEdit()
+        self.fit_info.setEnabled(True)
+        self.combo_to_chose_poly.activated[str].connect(self.fit)
         #set the layout
         layout = QtWidgets.QVBoxLayout()
 
@@ -92,6 +100,11 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
         btnlayout4.addWidget(self.textEdit)
         btnlayout4.addWidget(self.button_to_import_data_xyz)
 
+        btnlayout5 = QtWidgets.QHBoxLayout()
+        btnlayout5.addWidget(self.label_fit)
+        btnlayout5.addWidget(self.combo_to_chose_poly)
+        btnlayout5.addWidget(self.fit_info)
+
         qw = QtWidgets.QWidget(self)
         qw.setLayout(btnlayout1)
 
@@ -104,9 +117,13 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
         qw4 = QtWidgets.QWidget(self)
         qw4.setLayout(btnlayout4)
 
+        qw5 = QtWidgets.QWidget(self)
+        qw5.setLayout(btnlayout5)
+
         layout.addWidget(qw)
         layout.addWidget(qw2)
         layout.addWidget(qw3)
+        layout.addWidget(qw5)
         layout.addWidget(qw4)
 
         wid.setLayout(layout)
@@ -141,13 +158,23 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
                 print(err)
 
     def plot(self):
-        self.axes.plot(self.x, self.y, 'bo')
+        self.fig, self.axes = plt.subplots()
+        self.axes.plot(self.x, self.y, 'bo', markersize=10)
+        plt.grid(True)
         plt.show()
 
     def plot_twinx(self):
-        self.axes.plot(self.x, self.y, 'bo')
+        self.fig, self.axes = plt.subplots()
+        self.axes.plot(self.x, self.y, 'bo', label="prąd [A]", markersize=14)
         self.axes2 = self.axes.twinx()
-        self.axes2.plot(self.x, self.z, 'r<')
+        self.axes2.plot(self.x, self.z, 'r<', label="moc [W]", markersize=14)
+        self.axes2.set_ylabel("moc [W]")
+        box = self.axes.get_position()
+        self.axes.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        self.axes2.set_position([box.x0, box.y0, box.width * 0.8, box.height])
+        self.axes.legend(loc='center left', bbox_to_anchor=(1.05, 0.8), frameon=False)
+        self.axes2.legend(loc='upper left', bbox_to_anchor=(1.05, 0.8), frameon=False)
+        plt.grid(True)
         plt.show()
 
     def set_title(self):
@@ -168,6 +195,23 @@ class Window(QtWidgets.QMainWindow, Data_to_plot):
     def save_fig(self):
         path_to_save_fig = os.path.join(os.getcwd(), "wykres.jpg")
         plt.savefig(path_to_save_fig)
+
+    def fit(self, text):
+        f = Fit(self.x, self.y)
+        if text=="poly1":
+            a, b, da, db = f.do_fit_by_poly1()
+            self.fit_info.setText("a={}; b={}".format(a, b))
+            x = np.linspace(min(self.x), max(self.x), 1000)
+            y = a*x + b
+            self.axes.plot(x, y, 'r-', lw=2)
+            self.fig.canvas.draw()
+        if text == "poly2":
+            a, b, c, da, db, dc = f.do_fit_by_poly2()
+            self.fit_info.setText("a={}; b={}; c={}".format(a, b, c))
+            x = np.linspace(min(self.x), max(self.x), 1000)
+            y = a*x*x + b*x + c
+            self.axes.plot(x, y, 'g-', lw=2)
+            self.fig.canvas.draw()
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
